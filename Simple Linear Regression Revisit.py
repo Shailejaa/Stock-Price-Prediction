@@ -23,45 +23,45 @@ data['HL_percent'] = ((data['Adj. High'] - data['Adj. Low']) / data['Adj. Low'])
 data['HC_percent'] = ((data['Adj. High'] - data['Adj. Close']) / data['Adj. Close']) * 100
 data['Percent_chg'] = ((data['Adj. Close'] - data['Adj. Open']) / data['Adj. Open']) * 100
 
-# Storing Adj. Close column in forecast_col separately so in future if we want to go with any other label other than
-# Adj. Close then we just have to replace feature name here only.
+# Storing Adj. Close column in forecast_col separately so in the future if we want to go with any label other than
+# Adj. Close then we just have to replace the feature name here only.
 forecast_col = 'Adj. Close'
 
 # print(data.isnull().sum())
 # print(data.isnull().any().any())  # Way2 #Checking if at all there is nan in the entire dataset.
 
-# Creating and storing the number of forecast, I just want to predict for 45 days so ill set to 45.
+# Creating and storing the number of forecasts, I just want to predict for 45 days so I'll set it to 45.
 forecast_out = math.ceil(0.0131 * len(data))
 # print(len(data), forecast_out) # 3424 45
 
-# Creating Label column and assigning forecast col to it by shifting the forecast out number from tail of the data
+# Creating Label column and assigning forecast col to it by shifting the forecast out number from the tail of the data
 data['Label'] = data[forecast_col].shift(-forecast_out)
-# "data['Adj. Close'].shift(-45)" it will shift up the Adj. Close col up bu 45 days so at bottom there will be 45 NAN
+# "data['Adj. Close'].shift(-45)" it will shift up the Adj. Close col up by 45 days so at the bottom there will be 45 NAN
 # Label values for 45 feature rows and The bottom 45 values in the ‘Adj. Close’ column will be removed from the
 # DataFrame
 
-# Getting 30 days data exported to use for evaluation manually 
+# Getting 30 days of data exported to use for evaluation manually 
 X_check = data[-forecast_out - 30:-forecast_out]  # will slice like "data[-75:-45]" from the end of the dataframe.
 
 # Exporting
 X_check.to_excel('Check_Data.xlsx')
 
-# Now storing the same 30 days data same as X_check into X_future to train along with y and predicts the values and
+# Storing the same 30 days data as X_check into X_future to train along with y and predict the values and
 # compare it with X_check label values manually or to check with Evaluation metrics once the model gets ready
 X_future = data.drop(['Label'], axis=1)[-forecast_out - 30:-forecast_out]  # ""data[-75:-45]"" same slice as X_check
 y_true = data['Label'][-forecast_out - 30:-forecast_out]
 
 # Storing actual X and y along with X_lately for main model training and testing
 X = np.array(data.drop(['Label'], axis=1))
-X_lately = X[-forecast_out:]  # stored predictive features and to train it separately thta is 45 days
-X = X[:-forecast_out - 30]  # removed predictive features rows and X_check rows that is 75 from X data
+X_lately = X[-forecast_out:]  # stored forecast_out and to train it separately thta is 45 days
+X = X[:-forecast_out - 30]  # removed forecast_out rows and X_check rows that is 75 from X data
 
 data.dropna(inplace=True)  # dropping nan 45 rows before assigning data to y
 
 y = np.array(data['Label'])
 y = y[:-30]  # dropping last 30 rows data because we are going to use it for y_true.
 
-# print(len(data),len(X), len(y), len(X_future),len(X_check), len(y_true), len(X_lately))  #3379 3349 3349 30 30 30 45
+# print(len(data),len(X), len(y), len(X_future),len(X_check), len(y_true), len(X_lately))
 
 X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, test_size=0.3)
 
@@ -80,7 +80,7 @@ reg = LinearRegression()  # Initializing
 reg_fit = reg.fit(X_train, y_train)
 reg_score = reg.score(X_test, y_test)
 
-# print(reg_score)   # 0.9703311620446131 more than older script "0.8829838573145374" - Linear
+# print(reg_score) 
 
 forecast_set = reg.predict(X_future)
 
@@ -103,7 +103,6 @@ while len(future_dates) < len(forecast_set):
     end_date += datetime.timedelta(days=7)  # Extend by one week
     future_dates = pd.bdate_range(start=next_date, end=end_date)
 
-# Now, your loop
 for i, forecast in enumerate(forecast_set):
     data.loc[future_dates[i]] = [np.nan for _ in range(len(data.columns) - 1)] + [forecast]
 
@@ -126,4 +125,3 @@ mse = mean_squared_error(y_true, y_pred)
 rmse = sqrt(mse)
 
 print(f"MAE: {mae}, MSE: {mse}, RMSE: {rmse}")
-# MAE: 37.00421375881677, MSE: 3292.068602668291, RMSE: 57.37655098268186
